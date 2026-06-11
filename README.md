@@ -6,7 +6,9 @@
 
 ## Demo
 
-<video src="https://github.com/dranzer-17/Vorker-AI-Assignment/raw/main/vorker-final.mp4" controls width="100%"></video>
+**[▶ Watch the demo](https://github.com/dranzer-17/Vorker-AI-Assignment/raw/main/vorker-final.mp4)**
+
+> _To embed the video inline: open a new GitHub Issue, drag `vorker-final.mp4` into the comment box, copy the `user-attachments` URL GitHub generates, and replace the link above with a `<video src="...">` tag._
 
 ---
 
