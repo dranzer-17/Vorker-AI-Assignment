@@ -4,6 +4,12 @@
 
 ---
 
+## Demo
+
+<video src="vorker-final.mp4" controls width="100%"></video>
+
+---
+
 ## What is this?
 
 Running a business in Sweden means navigating a maze of laws — the Companies Act (ABL), Skatteverket tax rules, LAS labor regulations, Bolagsverket registration requirements. Getting it wrong is expensive.
