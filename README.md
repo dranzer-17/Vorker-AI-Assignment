@@ -6,7 +6,7 @@
 
 ## Demo
 
-<video src="vorker-final.mp4" controls width="100%"></video>
+<video src="https://github.com/dranzer-17/Vorker-AI-Assignment/raw/main/vorker-final.mp4" controls width="100%"></video>
 
 ---
 
