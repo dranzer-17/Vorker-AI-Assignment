@@ -1,0 +1,8 @@
+google-adk==2.2.0
+tavily-python==0.7.26
+httpx==0.28.1
+beautifulsoup4==4.15.0
+pinecone==9.1.0
+sentence-transformers==5.5.1
+PyPDF2==3.0.1
+python-dotenv==1.2.2

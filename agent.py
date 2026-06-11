@@ -67,11 +67,6 @@ TOP_URLS_TO_SCRAPE: <url1>, <url2>  ← pick the 2 highest-scored HTML pages (sk
     tools=[tavily_search_tool],
 )
 
-# ── 2b. RAG Agent (from friend) ────────────────────────────────────────────────
-# Searches the pre-indexed structured ChromaDB of Swedish legal PDFs.
-# Handles CORPORATE domain best (ABL, hembudsförbehåll, aktieägaravtal).
-# Gracefully returns empty if chroma_db not yet built.
-
 # ── 2. Parallel Research ───────────────────────────────────────────────────────
 # RAG + Web Search run simultaneously to minimize latency.
 parallel_research = ParallelAgent(

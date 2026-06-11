@@ -4,7 +4,7 @@ build_rag.py — Build structured Pinecone index from Swedish legal PDFs.
 Run once from ADK_Legal/:
     python build_rag.py
 
-PDFs must be in:  ADK_Legal/extras/docs/   (sweden.pdf, download.pdf)
+PDFs must be in:  ADK_Legal/docs/   (sweden.pdf, download.pdf)
 Index builds to:  Pinecone cloud            (swedish-law-structured)
 
 Structural RAG — 3 document layers with type metadata:
@@ -19,7 +19,7 @@ import sys
 import json
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
-DOCS_DIR = os.path.join(_ROOT, "extras", "docs")
+DOCS_DIR = os.path.join(_ROOT, "docs")
 METADATA_FILE = os.path.join(_ROOT, "node_index.json")
 INDEX_NAME = "swedish-law-structured"
 EMBED_DIM = 384

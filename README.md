@@ -15,29 +15,64 @@ SwedLex is an AI agent that reads the actual legal texts, searches live governme
 ## How it works (the pipeline)
 
 ```mermaid
-flowchart TD
-    User([User Question]) --> LR[Language & Router Agent\nDetects language, classifies domain,\nextracts any URLs]
+graph TD
+    Q([User Query]) --> SWEDLEX
 
-    LR --> PAR
+    SWEDLEX["✦ swed_lex
+    SequentialAgent"]
 
-    subgraph PAR[Parallel Research — runs simultaneously]
-        direction LR
-        RAG[RAG Agent\nSearches 5982 indexed legal\ndocument chunks in Pinecone]
-        WEB[Search Agent\nLive Tavily search across\nSkatteverket · Bolagsverket\nRiksdagen · Verksamt.se]
-    end
+    SWEDLEX --> LR["✦ language_router_agent
+    Detects language, classifies domain
+    Extracts user-provided URLs"]
 
-    PAR --> SCR[Scraper Agent\nFetches full page content\nfrom top URLs or uploaded PDFs]
+    SWEDLEX --> PR["✦ parallel_research
+    ParallelAgent"]
 
-    SCR --> SYN[Synthesis Agent — SwedLex\nCombines all research into a\ngrounded, cited answer]
+    SWEDLEX --> SC["✦ scraper_agent
+    Fetches full HTML pages
+    or user-provided PDF documents"]
 
-    SYN --> Answer([Structured Answer\nwith §§ references + sources])
+    SWEDLEX --> SY["✦ synthesis_agent
+    SwedLex — reads ALL upstream
+    context, writes grounded answer"]
 
-    style PAR fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style LR fill:#2d2d2d,stroke:#888,color:#fff
-    style RAG fill:#2d2d2d,stroke:#888,color:#fff
-    style WEB fill:#2d2d2d,stroke:#888,color:#fff
-    style SCR fill:#2d2d2d,stroke:#888,color:#fff
-    style SYN fill:#1a4a1a,stroke:#4aff4a,color:#fff
+    PR --> RAG["✦ rag_corporate_law_agent
+    Searches 5982 Pinecone chunks
+    law · reasoning · committee layers"]
+
+    PR --> SE["✦ search_agent
+    Live Tavily search
+    Skatteverket · Riksdagen · Bolagsverket"]
+
+    RAG -. search_swedish_law_docs .-> T1[("Pinecone
+    swedish-law-structured
+    5982 vectors")]
+
+    SE -. tavily_search_swedish .-> T2[("Tavily
+    Swedish gov sources")]
+
+    SC -. scrape_url .-> T3[("httpx + PyPDF2
+    HTML and PDF")]
+
+    LR -->|"LANGUAGE, DOMAIN, URL"| SY
+    RAG -->|"law nodes + references"| SY
+    SE -->|"search results + URLs"| SY
+    SC -->|"full page or PDF text"| SY
+
+    SY --> ANS(["Structured Answer
+    paragraph references, sources,
+    legal basis, follow-up questions"])
+
+    style SWEDLEX fill:#1a2744,stroke:#4a9eff,color:#fff
+    style PR fill:#1a2744,stroke:#4a9eff,color:#fff
+    style LR fill:#1e2d1e,stroke:#4aaa4a,color:#fff
+    style RAG fill:#1e2d1e,stroke:#4aaa4a,color:#fff
+    style SE fill:#1e2d1e,stroke:#4aaa4a,color:#fff
+    style SC fill:#1e2d1e,stroke:#4aaa4a,color:#fff
+    style SY fill:#2d1a2d,stroke:#aa4aff,color:#fff
+    style T1 fill:#0d1117,stroke:#555,color:#aaa
+    style T2 fill:#0d1117,stroke:#555,color:#aaa
+    style T3 fill:#0d1117,stroke:#555,color:#aaa
 ```
 
 Every answer goes through four stages:
@@ -88,8 +123,8 @@ Every answer goes through four stages:
 ## The RAG setup
 
 The indexed documents cover:
-- **sweden.pdf** — Main Swedish Companies Act (ABL, 893 pages)
-- **download.pdf** — Additional Swedish corporate law documents
+- `docs/sweden.pdf` — Main Swedish Companies Act (ABL, 893 pages)
+- `docs/download.pdf` — Additional Swedish corporate law documents
 - **SFS 2026:495** — Latest amendment to ABL Chapter 4 §41
 
 When you ask about hembudsförbehåll, the RAG agent doesn't just do a keyword search. It detects your intent:
@@ -106,15 +141,18 @@ This means you get the actual statutory text, not just summaries.
 
 ```
 ADK_Legal/
-├── agent.py          ← Root pipeline (SequentialAgent + all sub-agents)
-├── __init__.py       ← ADK entry point
-├── tools.py          ← Tavily search tool + HTML/PDF scraper tool
-├── build_rag.py      ← One-time script to index PDFs into Pinecone
+├── __init__.py          ← ADK entry point (exports root_agent)
+├── agent.py             ← Root pipeline (SequentialAgent + all sub-agents)
+├── tools.py             ← Tavily search tool + HTML/PDF scraper
+├── build_rag.py         ← One-time script to index PDFs into Pinecone
 ├── rag_agent/
-│   ├── agent.py      ← RAG sub-agent (LlmAgent with Pinecone tool)
-│   └── rag_tool.py   ← Intent-aware Pinecone retrieval
-└── extras/
-    └── docs/         ← Source PDFs (sweden.pdf, download.pdf)
+│   ├── __init__.py      ← Sub-package entry point
+│   ├── agent.py         ← RAG LlmAgent with Pinecone tool
+│   └── rag_tool.py      ← Intent-aware 3-layer Pinecone retrieval
+├── docs/                ← Source PDFs for indexing (gitignored)
+├── requirements.txt
+├── .env.example
+└── README.md
 ```
 
 ---
@@ -122,23 +160,27 @@ ADK_Legal/
 ## Running it
 
 ```bash
-# Install dependencies
+# 1. Create and activate virtual environment
 python3 -m venv .venv
-source .venv/bin/activate
-pip install google-adk tavily-python httpx beautifulsoup4 pinecone-client \
-            sentence-transformers PyPDF2 python-dotenv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
-# Set your API keys in .env
-GOOGLE_API_KEY=...
-TAVILY_API_KEY=...
-PINECONE_API_KEY=...
+# 2. Install dependencies
+pip install -r requirements.txt
 
-# Build the RAG index (only needed once)
+# 3. Configure environment
+cp .env.example .env
+# Edit .env and fill in your API keys
+
+# 4. Add source PDFs to docs/
+#    docs/sweden.pdf   — Swedish Companies Act (ABL)
+#    docs/download.pdf — Additional legal documents
+
+# 5. Build the Pinecone RAG index (run once, ~5 minutes)
 python build_rag.py
 
-# Launch the agent
+# 6. Launch
 adk web .
-# Open http://localhost:8000 and select ADK_Legal
+# Open http://localhost:8000 → select ADK_Legal
 ```
 
 ---
