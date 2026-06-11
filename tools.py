@@ -1,3 +1,4 @@
+import io
 import os
 import httpx
 from bs4 import BeautifulSoup
@@ -71,27 +72,47 @@ def tavily_search_swedish(query: str) -> dict:
 
 async def scrape_url(url: str) -> dict:
     """
-    Fallback: fetches and extracts clean text directly from a Swedish government URL.
-    Only works on authoritative domains. Use when Tavily did not return full content for a specific URL.
+    Fetches and extracts clean text from a URL. Supports both HTML pages and PDF documents.
+    For HTML: works only on authoritative Swedish domains.
+    For PDFs: works on ANY URL — use this when a user uploads or pastes a link to a PDF
+    legal document they want analyzed (e.g. a contract, company bylaws, compliance report).
 
     Args:
-        url: Full URL to scrape (must be from an authoritative Swedish domain).
+        url: Full URL to scrape. Can be an HTML page or a direct link ending in .pdf
 
     Returns:
         A dict with keys: url, title, text, error.
+        text contains up to 6000 characters of extracted content.
     """
-    if not any(domain in url for domain in AUTHORITATIVE_DOMAINS):
+    is_pdf = url.lower().split("?")[0].endswith(".pdf")
+
+    if not is_pdf and not any(domain in url for domain in AUTHORITATIVE_DOMAINS):
         return {
             "url": url,
             "title": "",
             "text": "",
-            "error": f"Not an authoritative domain. Allowed: {', '.join(AUTHORITATIVE_DOMAINS)}",
+            "error": f"Not a PDF and not an authoritative domain. Allowed HTML domains: {', '.join(AUTHORITATIVE_DOMAINS)}",
         }
 
     try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
             response = await client.get(url, headers={"Accept-Language": "sv-SE,sv;q=0.9,en;q=0.8"})
             response.raise_for_status()
+
+        if is_pdf:
+            import PyPDF2
+            reader = PyPDF2.PdfReader(io.BytesIO(response.content))
+            pages = []
+            for page in reader.pages[:20]:  # cap at 20 pages
+                try:
+                    t = page.extract_text()
+                    if t:
+                        pages.append(t)
+                except Exception:
+                    pass
+            text = " ".join(" ".join(pages).split())
+            filename = url.rstrip("/").split("/")[-1]
+            return {"url": url, "title": filename, "text": text[:6000], "error": ""}
 
         soup = BeautifulSoup(response.text, "html.parser")
         for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):

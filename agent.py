@@ -23,8 +23,10 @@ Domain classification rules:
 - CORPORATE    → ABL, aktieägaravtal, hembudsförbehåll, Bolagsverket, company formation, shares
 - LABOR        → LAS, karensavdrag, sjuklön, employment contract, vacation, parental leave
 - REGISTRATION → Starting a company, registering with Bolagsverket/Skatteverket, permits
-- URL_ANALYSIS → User provided a URL and wants it analyzed for Swedish compliance
+- URL_ANALYSIS → User provided a URL (HTML or PDF) and wants it analyzed for Swedish compliance
 - OUT_OF_SCOPE → Not related to Swedish business, legal, or tax matters
+
+PDF RULE: If the user pastes a .pdf URL, classify as URL_ANALYSIS and extract the URL.
 
 Language rules:
 - If the user writes in Swedish → sv
@@ -88,7 +90,10 @@ scraper_agent = LlmAgent(
 
 Look at the conversation so far and find either:
   a) TOP_URLS_TO_SCRAPE from the search_agent output, OR
-  b) A URL from the language_router_agent output (URL_ANALYSIS case)
+  b) A URL from the language_router_agent output (URL_ANALYSIS or PDF document case)
+
+PDF RULE: If the URL ends in .pdf — always call scrape_url for it regardless of domain.
+This handles user-uploaded legal documents (contracts, bylaws, compliance reports, SFS PDFs).
 
 Call scrape_url for each URL (max 2 calls).
 If SEARCH: SKIPPED appears and no URL exists → output "SCRAPE: SKIPPED" and stop.
