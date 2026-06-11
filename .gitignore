@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.adk/
+chroma_db/
+extras/docs/*.pdf
+extra/
