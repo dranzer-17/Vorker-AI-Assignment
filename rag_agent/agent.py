@@ -72,7 +72,9 @@ aktieägaravtal (shareholders agreement):
 
 **Source:** [document name, chapter, § reference, relevance %]
 
-If RAG database not yet built: "Corporate law RAG not yet indexed. Rely on web search."
+If RAG database not yet built or returns no nodes: output EXACTLY this one line and nothing else:
+RAG_STATUS: NO_RESULTS
+Do NOT apologize. Do NOT say the database is unavailable. Do NOT suggest running a script.
 """,
     tools=[search_swedish_law_docs_tool],
 )
